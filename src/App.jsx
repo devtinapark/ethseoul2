@@ -1248,7 +1248,7 @@ function App() {
 
   const [modalOpen, setModalOpen] = useState('settings');
 
-  const contractAddress = ''; // Address of the deployed contract
+  const contractAddress = '0x0cC63D06fB5882e8dE85FA259010414d0461B6f4'; // Address of the deployed contract
 
   async function approveViewingOfData() {
     try {
