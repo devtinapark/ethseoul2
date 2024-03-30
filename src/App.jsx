@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { FhenixClient, EncryptionTypes, getPermit } from "fhenixjs";
 import './App.css'
@@ -12,6 +12,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
 import Switch from '@mui/material/Switch';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -22,6 +23,10 @@ import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
 import PregnantWomanIcon from '@mui/icons-material/PregnantWoman';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import SettingsIcon from '@mui/icons-material/Settings';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/FavoriteBorder';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 
 const walletAddress = '0xAe9952347606576BAfa7ED44434312df0F519Ea7';
 const privateKeyDatingApp = '74a0f218c62ba96d19284ba2b4ba08f3aa763c32f707e7fbf57087b66a952d13';
@@ -1250,6 +1255,13 @@ function App() {
 
   const contractAddress = '0x0cC63D06fB5882e8dE85FA259010414d0461B6f4'; // Address of the deployed contract
 
+  useEffect(() => {
+    const storedAccount = localStorage.getItem("selectedAccount");
+    if (storedAccount) {
+      setConnected(true);
+    }
+  }, []);
+
   async function approveViewingOfData() {
     try {
       // await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1290,45 +1302,40 @@ function App() {
   }
 
 
-
-
-  async function connectWallet() {
-    if (!connected) {
-      // Connect the wallet using ethers.js
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const _walletAddress = await signer.getAddress();
-      setConnected(true);
-      setWalletAddress(_walletAddress);
-    } else {
-      // Disconnect the wallet
-      window.ethereum.selectedAddress = null;
-      setConnected(false);
-      setWalletAddress("");
-    }
-  }
-
-
   async function connect() {
-    // Finding out if MetaMask exists
-    if (typeof window.ethereum !== "undefined") {
-      console.log("MetaMask exists");
-      try {
-        let accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-        const selectedAccount = accounts[0];
-        console.log(selectedAccount);
-        console.log("Connected");
-
-        // Store the selected account in local storage
-        localStorage.setItem("selectedAccount", selectedAccount);
-        console.log("Account stored in local storage");
-
-        // Changes it to just the connected
-      } catch (error) {
-        console.error("Error connecting:", error);
+    if (!connected) {
+      if (typeof window.ethereum !== "undefined") {
+        console.log("MetaMask exists");
+        try {
+          let accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+          const selectedAccount = accounts[0];
+          console.log(selectedAccount);
+          console.log("Connected");
+          localStorage.setItem("selectedAccount", selectedAccount);
+          console.log("Account stored in local storage");
+          setConnected(true);
+        } catch (error) {
+          console.error("Error connecting:", error);
+        }
+      } else {
+        console.log("No MetaMask");
       }
     } else {
-      console.log("No MetaMask");
+      try {
+        // localStorage.removeItem("selectedAccount");
+        // setConnected(false);
+        // console.log('connected false', connected);
+        // await window.ethereum.request({
+        //   method: "wallet_requestPermissions",
+        //   params: [
+        //     {
+        //       eth_accounts: {}
+        //     }
+        //   ]
+        // });
+      } catch (error) {
+        console.error("Error disconnecting:", error);
+      }
     }
   }
 
@@ -1360,79 +1367,65 @@ function App() {
         <Box sx={{ flexGrow: 1 }}>
           <AppBar position="static">
             <Toolbar className="top-navigation">
-              <IconButton
-                size="large"
-                edge="start"
-                color="primary"
-                aria-label="menu"
-                sx={{ mr: 2 }}
-              >
-                <MenuIcon />
-              </IconButton>
+              <Button><FavoriteBorderIcon fontSize="medium" color="primary" sx={{ mr: 0.5 }} />Swipe</Button>
+              <Button><VerifiedUserIcon fontSize="medium" color="primary" sx={{ mr: 0.5 }} />My Verifications</Button>
               <Typography variant="h6" component="div" color="primary" sx={{ flexGrow: 1 }}>
                 STinDer
               </Typography>
-
-              <div className="app">
-                <div className="main">
-                  <div className="content">
-                    <button className="btn" onClick={connect}>
-                      {connected ? "Disconnect Wallet" : "Connect Wallet"}
-                    </button>
-                    <h3>Address</h3>
-                    <h4 className="wal-add">{walletAddress}</h4>
-                  </div>
-                </div>
-              </div>
-              {/* <Button color="primary">Login</Button> */}
+              <Button color="primary" onClick={connect}>
+                {connected ? "Connected" : "Connect Wallet"}
+              </Button>
             </Toolbar>
           </AppBar>
           <>
             <div className="flex-container">
-              <div className="profile-container">
-                <div className="profile-inner-border"></div>
-                <img src={profilePhoto} alt="Profile picture" className="profile-picture" />
-              </div>
-              <div className="flex items-center">
-                <h2 className="username">Ethan</h2>
-                {displayStates.displayV && <VerifiedIcon fontSize="large" className="badge-light" />}
-                {displayStates.displayM && <Diversity3Icon fontSize="large" className="badge-light" />}
-                {displayStates.displayC && <GavelIcon fontSize="large" className="badge-light" />}
-                {displayStates.displayS && <MedicalInformationIcon fontSize="large" className="badge-light" />}
-                {displayStates.displayF && <PregnantWomanIcon fontSize="large" className="badge-light" />}
+              <div>
+                <div className="profile-container">
+                  <div className="profile-inner-border"></div>
+                  <img src={profilePhoto} alt="Profile picture" className="profile-picture" />
+                </div>
+                <div className="flex items-center">
+                  <h2 className="username">Ethan</h2>
+                  {displayStates.displayV && <VerifiedIcon fontSize="large" className="badge-light" />}
+                  {displayStates.displayM && <Diversity3Icon fontSize="large" className="badge-light" />}
+                  {displayStates.displayC && <GavelIcon fontSize="large" className="badge-light" />}
+                  {displayStates.displayS && <MedicalInformationIcon fontSize="large" className="badge-light" />}
+                  {displayStates.displayF && <PregnantWomanIcon fontSize="large" className="badge-light" />}
 
+                </div>
+                {modalOpen == 'i' &&
+                  <div className="settings-container">
+                    <h3>Verify Your Identity</h3>
+                    <Button onClick={() => approveViewingOfData()}>Grant Access</Button>
+                    <Button onClick={handleCloseModal}>Close</Button>
+                  </div>}
+                {modalOpen == 'm' &&
+                  <div className="settings-container">
+                    <h3>Verify Your Marriage Status</h3>
+                    <Button onClick={() => verifyMarriage()}>Grant Access</Button>
+                    <Button onClick={handleCloseModal}>Close</Button>
+                  </div>}
+                {modalOpen == 'c' &&
+                  <div className="settings-container">
+                    <h3>Verify Your Criminal Records</h3>
+                    <Button onClick={handleCloseModal}>Close</Button>
+                  </div>}
+                {modalOpen == 's' &&
+                  <div className="settings-container">
+                    <h3>Verify Your STD Status</h3>
+                    <Button onClick={handleCloseModal}>Close</Button>
+                  </div>}
+                {modalOpen == 'f' &&
+                  <div className="settings-container">
+                    <h3>Verify Your Fertility Measure</h3>
+                    <Button onClick={handleCloseModal}>Close</Button>
+                  </div>}
               </div>
-              {modalOpen=='i' &&
-              <div className="settings-container">
-                <h3>Verify Your Identity</h3>
-                  <Button onClick={() => approveViewingOfData()}>Grant Access</Button>
-                  <Button onClick={handleCloseModal}>Close</Button>
-              </div>}
-              {modalOpen == 'm' &&
-                <div className="settings-container">
-                  <h3>Verify Your Marriage Status</h3>
-                  <Button onClick={() => verifyMarriage()}>Grant Access</Button>
-                  <Button onClick={handleCloseModal}>Close</Button>
-                </div>}
-              {modalOpen == 'c' &&
-                <div className="settings-container">
-                  <h3>Verify Your Criminal Records</h3>
-                  <Button onClick={handleCloseModal}>Close</Button>
-                </div>}
-              {modalOpen == 's' &&
-                <div className="settings-container">
-                  <h3>Verify Your STD Status</h3>
-                  <Button onClick={handleCloseModal}>Close</Button>
-                </div>}
-              {modalOpen == 'f' &&
-                <div className="settings-container">
-                  <h3>Verify Your Fertility Measure</h3>
-                  <Button onClick={handleCloseModal}>Close</Button>
-                </div>}
               {modalOpen=='settings' &&
                 <div className="settings-container">
-                  <h3>Verification Settings</h3>
+                  <h2>My Verifications</h2>
                   <Divider />
+                  <br />
                   <div className="section">
                     <div className="pos-abs">
                       <VerifiedIcon fontSize="large" className="badge-dark" />
@@ -1533,6 +1526,7 @@ function App() {
                     </div>
                   </div>
                   <Divider />
+                  <br />
                 </div>
               }
             </div>
@@ -1543,34 +1537,5 @@ function App() {
     </div>
   );
 }
-
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <div>
-//         <a href="https://vitejs.dev" target="_blank">
-//           <img src={viteLogo} className="logo" alt="Vite logo" />
-//         </a>
-//         <a href="https://react.dev" target="_blank">
-//           <img src={reactLogo} className="logo react" alt="React logo" />
-//         </a>
-//       </div>
-//       <h1>Vite + React</h1>
-//       <div className="card">
-//         <button onClick={() => setCount((count) => count + 1)}>
-//           count is {count}
-//         </button>
-//         <p>
-//           Edit <code>src/App.jsx</code> and save to test HMR
-//         </p>
-//       </div>
-//       <p className="read-the-docs">
-//         Click on the Vite and React logos to learn more
-//       </p>
-//     </>
-//   )
-// }
 
 export default App
