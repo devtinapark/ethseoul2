@@ -109,7 +109,7 @@
 @media (min-width: 768px) {
   .verify-button {
     position: absolute;
-    right: 5%;
+    right: 2%;
     top: 2rem;
     }
 }

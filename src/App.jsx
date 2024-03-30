@@ -20,8 +20,7 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import GavelIcon from '@mui/icons-material/Gavel';
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
-import PregnantWomanIcon from '@mui/icons-material/PregnantWoman';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CheckIcon from '@mui/icons-material/Check';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -1243,6 +1242,13 @@ function App() {
     console.error('MetaMask (window.ethereum) is not available');
   }
   const [connected, setConnected] = useState(false);
+  const [verifiedI, setVerifiedI] = useState(null);
+  const [verifiedM, setVerifiedM] = useState(null);
+  const [verifiedMTime, setVerifiedMTime] = useState(null);
+  const [verifiedC, setVerifiedC] = useState(null);
+  const [verifiedCTime, setVerifiedCTime] = useState(null);
+  const [verifiedS, setVerifiedS] = useState(null);
+  const [verifiedSTime, setVerifiedSTime] = useState(null);
   const [displayStates, setDisplayStates] = useState({
     displayV: true,
     displayM: true,
@@ -1262,7 +1268,85 @@ function App() {
     }
   }, []);
 
-  async function approveViewingOfData() {
+  useEffect(() => {
+    const verifiedILocal = localStorage.getItem("retrieveIdentity");
+    if (verifiedILocal) {
+      setVerifiedI(verifiedILocal);
+    }
+  }, [modalOpen]);
+
+  useEffect(() => {
+    const verifiedMLocal = localStorage.getItem("retrieveMarriageStatus");
+    if (verifiedMLocal) {
+      const dataObject = JSON.parse(verifiedMLocal);
+      const { data, timestamp } = dataObject;
+      const getStatusString = (status) => {
+        switch (status) {
+          case '0':
+            return "unknown";
+          case '1':
+            return "single";
+          case '2':
+            return "divorced";
+          case '3':
+            return "widowed";
+          case '4':
+            return "married";
+          default:
+            return "Unknown";
+        }
+      };
+      setVerifiedM(`Result: Marriage status is ${getStatusString(data)}.`);
+      setVerifiedMTime(`Verified on: ${new Date(timestamp).toLocaleString()}`);
+    }
+  }, [modalOpen]);
+
+  useEffect(() => {
+    const verifiedCLocal = localStorage.getItem("retrieveCriminalRecord");
+    if (verifiedCLocal) {
+      const dataObject = JSON.parse(verifiedCLocal);
+      const { data, timestamp } = dataObject;
+      const getStatusString = (status) => {
+        switch (status) {
+          case '0':
+            return "Unknown";
+          case '1':
+            return "There is at least 1 criminal record.";
+          case '2':
+            return "There is NO criminal record.";
+          default:
+            return "Unknown";
+        }
+      };
+      setVerifiedC(`Result: ${getStatusString(data)}`);
+      setVerifiedCTime(`Verified on: ${new Date(timestamp).toLocaleString()}`);
+    }
+  }, [modalOpen]);
+
+  useEffect(() => {
+    const verifiedSLocal = localStorage.getItem("retrieveMedicalData");
+    if (verifiedSLocal) {
+      const dataObject = JSON.parse(verifiedSLocal);
+      const { data, timestamp } = dataObject;
+      const getStatusString = (status) => {
+        switch (status) {
+          case '0':
+            return "Unknown";
+          case '1':
+            return "Tested positive for at least 1 out of 6 STDs.";
+          case '2':
+            return "Tested negative for all 6 STDs.";
+          default:
+            return "Unknown";
+        }
+      };
+      setVerifiedS(`Result: ${getStatusString(data)}`);
+      setVerifiedSTime(`Verified on: ${new Date(timestamp).toLocaleString()}`);
+    }
+  }, [modalOpen]);
+
+
+  async function onGrantAccessI() {
     try {
       // await window.ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -1272,12 +1356,74 @@ function App() {
       const tx = await contract.approveViewingOfData(storedAccount);
       await tx.wait(); // Wait for the transaction to be mined
       console.log('Transaction successful:', tx.hash);
+      localStorage.setItem("retrieveIdentity", tx.hash.toString());
+      setModalOpen('settings');
     } catch (error) {
       console.error('Error:', error);
     }
   }
 
-  async function verifyMarriage() {
+  async function onGrantAccessM() {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const client = new FhenixClient({ provider });
+      const storedAccount = localStorage.getItem("selectedAccount");
+      // await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const contract = new ethers.Contract(contractAddress, ABI, provider.getSigner());
+
+      // Call the method
+      const permit = await getPermit(contractAddress, provider);
+      client.storePermit(permit);
+      const permission = client.extractPermitPermission(permit);
+      let response0 = await contract.retrieveMarriageStatus(
+        storedAccount,
+        permission
+      );
+      const plaintext = client.unseal(contractAddress, response0);
+      const timestamp = new Date().getTime(); // Get current timestamp
+      const dataWithTimestamp = {
+        data: plaintext.toString(),
+        timestamp: timestamp
+      };
+      localStorage.setItem("retrieveMarriageStatus", JSON.stringify(dataWithTimestamp));
+      console.log("plaintext return: " + plaintext.toString());
+      setModalOpen('settings');
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+
+  async function onGrantAccessC() {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const client = new FhenixClient({ provider });
+      const storedAccount = localStorage.getItem("selectedAccount");
+      // await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const contract = new ethers.Contract(contractAddress, ABI, provider.getSigner());
+
+      // Call the method
+      const permit = await getPermit(contractAddress, provider);
+      client.storePermit(permit);
+      const permission = client.extractPermitPermission(permit);
+      let response0 = await contract.retrieveCriminalRecord(
+        storedAccount,
+        permission
+      );
+      const plaintext = client.unseal(contractAddress, response0);
+      const timestamp = new Date().getTime(); // Get current timestamp
+      const dataWithTimestamp = {
+        data: plaintext.toString(),
+        timestamp: timestamp
+      };
+      localStorage.setItem("retrieveCriminalRecord", JSON.stringify(dataWithTimestamp));
+      console.log("plaintext return: " + plaintext.toString());
+      setModalOpen('settings');
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+
+  async function onGrantAccessS() {
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const client = new FhenixClient({ provider });
@@ -1294,8 +1440,14 @@ function App() {
         permission
       );
       const plaintext = client.unseal(contractAddress, response0);
-      // Take this plain text and add details to webpage maybe store in session?
+      const timestamp = new Date().getTime(); // Get current timestamp
+      const dataWithTimestamp = {
+        data: plaintext.toString(),
+        timestamp: timestamp
+      };
+      localStorage.setItem("retrieveMedicalData", JSON.stringify(dataWithTimestamp));
       console.log("plaintext return: " + plaintext.toString());
+      setModalOpen('settings');
     } catch (error) {
       console.error('Error:', error);
     }
@@ -1360,6 +1512,22 @@ function App() {
 
   };
 
+  const defaultVerifyText = `We'll use a smart contract connected for verification. By granting access, you authorize this contract to confirm your identity and proceed with the requested verification.`;
+
+  const VerifyModal = ({ heading, text, text2, onGrantAccess }) => {
+
+    return (
+      <div className="settings-container">
+        <h2>{heading}</h2>
+        <p>{text}</p>
+        <p>{text2}</p>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+          <Button variant="contained" onClick={onGrantAccess}>Grant Access</Button>
+          <Button variant="outlined" onClick={handleCloseModal} sx={{ ml: 2 }}>Back</Button>
+        </Box>
+      </div>
+    );
+  };
 
   return (
     <div className="body quicksand-400">
@@ -1369,7 +1537,7 @@ function App() {
             <Toolbar className="top-navigation">
               <Button><FavoriteBorderIcon fontSize="medium" color="primary" sx={{ mr: 0.5 }} />Swipe</Button>
               <Button><VerifiedUserIcon fontSize="medium" color="primary" sx={{ mr: 0.5 }} />My Verifications</Button>
-              <Typography variant="h6" component="div" color="primary" sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" component="div" color="primary" sx={{ flexGrow: 1, mr: 18 }}>
                 STinDer
               </Typography>
               <Button color="primary" onClick={connect}>
@@ -1390,37 +1558,64 @@ function App() {
                   {displayStates.displayM && <Diversity3Icon fontSize="large" className="badge-light" />}
                   {displayStates.displayC && <GavelIcon fontSize="large" className="badge-light" />}
                   {displayStates.displayS && <MedicalInformationIcon fontSize="large" className="badge-light" />}
-                  {displayStates.displayF && <PregnantWomanIcon fontSize="large" className="badge-light" />}
-
                 </div>
-                {modalOpen == 'i' &&
-                  <div className="settings-container">
-                    <h3>Verify Your Identity</h3>
-                    <Button onClick={() => approveViewingOfData()}>Grant Access</Button>
-                    <Button onClick={handleCloseModal}>Close</Button>
-                  </div>}
-                {modalOpen == 'm' &&
-                  <div className="settings-container">
-                    <h3>Verify Your Marriage Status</h3>
-                    <Button onClick={() => verifyMarriage()}>Grant Access</Button>
-                    <Button onClick={handleCloseModal}>Close</Button>
-                  </div>}
-                {modalOpen == 'c' &&
-                  <div className="settings-container">
-                    <h3>Verify Your Criminal Records</h3>
-                    <Button onClick={handleCloseModal}>Close</Button>
-                  </div>}
-                {modalOpen == 's' &&
-                  <div className="settings-container">
-                    <h3>Verify Your STD Status</h3>
-                    <Button onClick={handleCloseModal}>Close</Button>
-                  </div>}
-                {modalOpen == 'f' &&
-                  <div className="settings-container">
-                    <h3>Verify Your Fertility Measure</h3>
-                    <Button onClick={handleCloseModal}>Close</Button>
-                  </div>}
               </div>
+              {modalOpen == 'i' && verifiedI == null &&
+                <VerifyModal
+                  heading="Verify Your Identity"
+                  text={defaultVerifyText}
+                  text2=""
+                  onGrantAccess={onGrantAccessI}
+                />}
+              {modalOpen == 'i' && verifiedI !== null &&
+                <VerifyModal
+                  heading="Your Identity Has Been Verified."
+                  text="Result: Success"
+                  text2=""
+                  onGrantAccess={onGrantAccessI}
+                />}
+              {modalOpen == 'm' && verifiedM == null &&
+                <VerifyModal
+                  heading="Verify Your Marriage Status"
+                  text={defaultVerifyText}
+                  text2=""
+                  onGrantAccess={onGrantAccessM}
+                />}
+              {modalOpen == 'm' && verifiedM !== null &&
+                <VerifyModal
+                  heading="Your Marriage Status Has Been Verified."
+                  text={verifiedMTime}
+                  text2={verifiedM}
+                  onGrantAccess={onGrantAccessI}
+                  />}
+              {modalOpen == 'c' && verifiedC == null &&
+                <VerifyModal
+                  heading="Verify Your Criminal Records"
+                  text={defaultVerifyText}
+                  text2=""
+                  onGrantAccess={onGrantAccessC}
+                />}
+              {modalOpen == 'c' && verifiedC !== null &&
+                <VerifyModal
+                  heading="Your Marriage Status Has Been Verified."
+                  text={verifiedCTime}
+                  text2={verifiedC}
+                  onGrantAccess={onGrantAccessC}
+                />}
+              {modalOpen == 's' && verifiedS == null &&
+                <VerifyModal
+                heading="Verify Your STD Status"
+                  text={defaultVerifyText}
+                  text2=""
+                  onGrantAccess={onGrantAccessS}
+                />}
+              {modalOpen == 's' && verifiedS !== null &&
+                <VerifyModal
+                  heading="Your Marriage Status Has Been Verified."
+                  text={verifiedSTime}
+                  text2={verifiedS}
+                  onGrantAccess={onGrantAccessS}
+                />}
               {modalOpen=='settings' &&
                 <div className="settings-container">
                   <h2>My Verifications</h2>
@@ -1438,11 +1633,17 @@ function App() {
                       />
                     </div>
                     <h3 className="h3-category">Identity Verification </h3>
-                    <p>Strengthen the trustworthiness of profiles through verified personal identification.</p>
+                    <p>{verifiedI == null && 'Strengthen the trustworthiness of profiles through verified personal identification.'}</p>
+                    <p>{verifiedI !== null && 'Result: Success'}</p>
                     <div className="verify-button">
-                      <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={() => handleOpenModal('i')}>
-                        Verify
-                      </Button>
+                      {verifiedI == null ?
+                        <Button variant="contained" endIcon={<CheckIcon />} onClick={() => handleOpenModal('i')}>
+                          Verify
+                        </Button> :
+                        <Button variant="outlined" endIcon={<CheckIcon />} onClick={() => handleOpenModal('i')}>
+                          Verified
+                        </Button>
+                      }
                     </div>
                   </div>
                   <Divider />
@@ -1458,11 +1659,18 @@ function App() {
                       />
                     </div>
                     <h3 className="h3-category">Marriage Status</h3>
-                    <p>Verify your marital status to enhance trust with potential matches.</p>
+                    <p>{verifiedM == null && 'Verify your marital status to enhance trust with potential matches.'}</p>
+                    <p>{verifiedMTime !== null && verifiedMTime}</p>
+                    <p>{verifiedM !== null && verifiedM}</p>
                     <div className="verify-button">
-                      <Button variant="outlined" endIcon={<ArrowForwardIcon />} onClick={() => handleOpenModal('m')}>
-                        Verified
-                      </Button>
+                      {verifiedM == null ?
+                        <Button variant="contained" endIcon={<CheckIcon />} onClick={() => handleOpenModal('m')}>
+                          Verify
+                        </Button> :
+                        <Button variant="outlined" endIcon={<CheckIcon />} onClick={() => handleOpenModal('m')}>
+                          Verified
+                        </Button>
+                      }
                     </div>
                   </div>
                   <Divider />
@@ -1478,11 +1686,18 @@ function App() {
                       />
                     </div>
                     <h3 className="h3-category">Criminal Records</h3>
-                    <p>Confirm a clean legal background to maintain a safe community.</p>
+                    <p>{verifiedC == null && 'Confirm a clean legal background to maintain a safe community.'}</p>
+                    <p>{verifiedCTime !== null && verifiedCTime}</p>
+                    <p>{verifiedC !== null && verifiedC}</p>
                     <div className="verify-button">
-                      <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={() => handleOpenModal('c')}>
-                        Verify
-                      </Button>
+                      {verifiedC == null ?
+                        <Button variant="contained" endIcon={<CheckIcon />} onClick={() => handleOpenModal('c')}>
+                          Verify
+                        </Button> :
+                        <Button variant="outlined" endIcon={<CheckIcon />} onClick={() => handleOpenModal('c')}>
+                          Verified
+                        </Button>
+                      }
                     </div>
                   </div>
                   <Divider />
@@ -1498,31 +1713,18 @@ function App() {
                       />
                     </div>
                     <h3 className="h3-category">STD</h3>
-                    <p>Share health status discreetly to ensure mutual safety and transparency.</p>
+                    <p>{verifiedS == null && 'Share health status discreetly to ensure mutual safety and transparency.'}</p>
+                    <p>{verifiedSTime !== null && verifiedSTime}</p>
+                    <p>{verifiedS !== null && verifiedS}</p>
                     <div className="verify-button">
-                      <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={() => handleOpenModal('s')}>
-                        Verify
-                      </Button>
-                    </div>
-                  </div>
-                  <Divider />
-                  <div className="section">
-                    <div className="pos-abs">
-                      <PregnantWomanIcon fontSize="large" className="badge-dark" />
-                      <Switch
-                        className="switch"
-                        size="large"
-                        name="displayF"
-                        checked={displayStates.displayF}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    <h3 className="h3-category">Fertility Measure</h3>
-                    <p>Optional fertility information for those considering future family planning.</p>
-                    <div className="verify-button">
-                      <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={() => handleOpenModal('f')}>
-                        Verify
-                      </Button>
+                      {verifiedS == null ?
+                        <Button variant="contained" endIcon={<CheckIcon />} onClick={() => handleOpenModal('s')}>
+                          Verify
+                        </Button> :
+                        <Button variant="outlined" endIcon={<CheckIcon />} onClick={() => handleOpenModal('s')}>
+                          Verified
+                        </Button>
+                      }
                     </div>
                   </div>
                   <Divider />
