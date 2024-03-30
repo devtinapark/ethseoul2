@@ -31,7 +31,7 @@ const providerUrl = 'https://api.testnet.fhenix.zone:7747/';
 const provider2 = new ethers.providers.JsonRpcProvider(providerUrl);
 const walletConnected = wallet.connect(provider2);
 
-const client = new FhenixClient({ provider2 });
+
 
 const ABI = [
   {
@@ -1257,7 +1257,7 @@ function App() {
       const contract = new ethers.Contract(contractAddress, ABI, provider.getSigner());
 
       // Call the method
-      const tx = await contract.approveViewingOfData(walletAddress);
+      const tx = await contract.approveViewingOfData(accounts[0]);
       await tx.wait(); // Wait for the transaction to be mined
       console.log('Transaction successful:', tx.hash);
     } catch (error) {
@@ -1267,17 +1267,19 @@ function App() {
 
   async function verifyMarriage() {
     try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(contractAddress, ABI, provider.getSigner());
+      const client = new FhenixClient({ provider });
       const storedAccount = localStorage.getItem("selectedAccount");
       // await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const contract = new ethers.Contract(contractAddress, ABI, walletConnected);
-      console.log('storedAccouunt', storedAccount);
-      console.log('walletConnected', walletConnected);
+      const contract = new ethers.Contract(contractAddress, ABI, provider.getSigner());
+
       // Call the method
-      const permit = await getPermit(contractAddress, provider2);
+      const permit = await getPermit(contractAddress, provider);
       client.storePermit(permit);
       const permission = client.extractPermitPermission(permit);
       let response0 = await contract.retrieveMedicalData(
-        storedAccount,
+        accounts[0],
         permission
       );
       const plaintext = client.unseal(contractAddress, response0);
