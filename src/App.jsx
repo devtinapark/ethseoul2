@@ -1248,16 +1248,16 @@ function App() {
 
   const [modalOpen, setModalOpen] = useState('settings');
 
-  const contractAddress = '0x75eb6d9Ad68fa65061b21AA812f574372DbCdAD8'; // Address of the deployed contract
+  const contractAddress = ''; // Address of the deployed contract
 
   async function approveViewingOfData() {
     try {
       // await window.ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = new ethers.Contract(contractAddress, ABI, provider.getSigner());
-
+      const storedAccount = localStorage.getItem("selectedAccount");
       // Call the method
-      const tx = await contract.approveViewingOfData(accounts[0]);
+      const tx = await contract.approveViewingOfData(storedAccount);
       await tx.wait(); // Wait for the transaction to be mined
       console.log('Transaction successful:', tx.hash);
     } catch (error) {
@@ -1268,7 +1268,6 @@ function App() {
   async function verifyMarriage() {
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(contractAddress, ABI, provider.getSigner());
       const client = new FhenixClient({ provider });
       const storedAccount = localStorage.getItem("selectedAccount");
       // await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1279,7 +1278,7 @@ function App() {
       client.storePermit(permit);
       const permission = client.extractPermitPermission(permit);
       let response0 = await contract.retrieveMedicalData(
-        accounts[0],
+        storedAccount,
         permission
       );
       const plaintext = client.unseal(contractAddress, response0);
